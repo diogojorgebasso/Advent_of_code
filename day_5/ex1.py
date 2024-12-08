@@ -2,7 +2,7 @@ entries = []
 flag = False
 lines = dict()
 
-with open("input.txt", "r") as file:
+with open("entry.txt", "r") as file:
     for line in file:
         if line == "\n":
             flag = True
@@ -39,6 +39,7 @@ for a in entries:
                     general += int(b[int(len(b)/2)])
                     print(general)
             else:
+                print("ne trouver")
                 break
 print(general)
 

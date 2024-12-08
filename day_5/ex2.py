@@ -1,61 +1,82 @@
-entries = []
-flag = False
-lines = dict()
+def topological_sort(nodes, edges):
+    in_degree = {n:0 for n in nodes}
+    for u in edges:
+        for v in edges[u]:
+            in_degree[v] += 1
 
-with open("entry.txt", "r") as file:
-    for line in file:
-        if line == "\n":
-            flag = True
-        if flag:
-            entries.append(line)
-        else:
-            a,b = line.split("|")
-            a = int(a)
-            b = int(b)
-            if a not in lines:
-                lines[a] = []
-            lines[a].append(b)
-count = False
-def verify(x,y):
-    global count
-    if not x in lines:
-        count = True
-        return "dic"
-    if not y in lines[x]:
-        count = True
-        return "lines"
-    
-general = 0
+    queue = [n for n in nodes if in_degree[n] == 0]
+    result = []
+    while queue:
+        u = queue.pop()
+        result.append(u)
+        if u in edges:
+            for v in edges[u]:
+                in_degree[v] -= 1
+                if in_degree[v] == 0:
+                    queue.append(v)
+    return result
 
 
-def run_test(b):  
-    global general, count
-    temp_list = []
-    for tmp in b:
-        temp_list.append(int(tmp))
-    for e in range(0, len(temp_list)-1):
-        x = temp_list[e]
-        y = temp_list[e+1]
-        if verify(x,y) == "dic":
-            # trocar de posição com o próximo 
-            temp = temp_list[e]
-            temp_list[e] = temp_list[e+1]
-            temp_list[e+1] = temp
-            run_test(temp_list)
+rules = {}
+updates = []
+with open("input.txt", "r") as f:
+    # Ler regras
+    for line in f:
+        line = line.strip()
+        if line == "":
+            # Linha em branco encontrada, parar de ler regras
             break
-        elif verify(x,y) == "lines":
-            # trocar de elemento com o anterior
-            temp = temp_list[e]
-            temp_list[e] = temp_list[e-1]
-            temp_list[e-1] = temp
-            run_test(temp_list)
-            break
-        if count:
-            general += temp_list[int(len(b)/2)]
-                    
-for a in entries:
-    b = a.strip().split(",")
-    if b != ['']:
-        run_test(b)
-    print(general)
+        a, b = line.split("|")
+        a, b = int(a), int(b)
+        if a not in rules:
+            rules[a] = []
+        rules[a].append(b)
+    for line in f:
+        line=line.strip()
+        if line:
+            update = list(map(int, line.split(",")))
+            updates.append(update)
 
+def is_correctly_ordered(update, rules):
+    pos = {p: i for i,p in enumerate(update)}
+    for x in rules:
+        for y in rules[x]:
+            if x in pos and y in pos:
+                if pos[x] > pos[y]:
+                    return False
+    return True
+
+def reorder_update(update, rules):
+    pages = set(update)
+    subgraph = {}
+    for x in rules:
+        for y in rules[x]:
+            if x in pages and y in pages:
+                if x not in subgraph:
+                    subgraph[x] = []
+                subgraph[x].append(y)
+
+    sorted_pages = topological_sort(pages, subgraph)
+    return sorted_pages
+
+def middle_page(update):
+    # update tem tamanho ímpar
+    return update[len(update)//2]
+
+sum_correct = 0
+sum_incorrect = 0
+
+incorrect_updates = []
+for upd in updates:
+    if is_correctly_ordered(upd, rules):
+        sum_correct += middle_page(upd)
+    else:
+        incorrect_updates.append(upd)
+
+# Agora arrumar os incorretos
+for upd in incorrect_updates:
+    corrected = reorder_update(upd, rules)
+    sum_incorrect += middle_page(corrected)
+
+print("Soma das páginas do meio dos updates já corretos (Parte 1):", sum_correct)
+print("Soma das páginas do meio dos updates após correção (Parte 2):", sum_incorrect)
